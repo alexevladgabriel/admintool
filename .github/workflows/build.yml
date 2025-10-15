@@ -39,6 +39,7 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           arch: ${{ matrix.qt_arch }}
+          version: '5.15.2'
           aqtversion: '>=1.2.1'
           py7zrversion: '>=0.16.1'
 
