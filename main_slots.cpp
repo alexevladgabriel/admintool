@@ -10,6 +10,7 @@
 #include <QSignalMapper>
 #include <QDesktopServices>
 #include <QWidgetAction>
+#include <QTextEdit>
 
 #define STEAMID_COLUMN 4
 #define NAME_COLUMN 1
@@ -32,6 +33,7 @@ void MainWindow::ConnectSlots()
     this->ui->rconLogin->connect(this->ui->rconLogin, &QPushButton::released, this, &MainWindow::rconLogin);
     this->ui->logGetLog->connect(this->ui->logGetLog, &QPushButton::released, this, &MainWindow::getLog);
     this->ui->actionAdd_Server->connect(this->ui->actionAdd_Server, &QAction::triggered, this, &MainWindow::addServerEntry);
+    this->ui->actionBatch_Add_Servers->connect(this->ui->actionBatch_Add_Servers, &QAction::triggered, this, &MainWindow::batchAddServerEntry);
     this->ui->actionDark_Theme->connect(this->ui->actionDark_Theme, &QAction::triggered, this, &MainWindow::darkThemeTriggered);
     this->ui->actionSet_Log_Port->connect(this->ui->actionSet_Log_Port, &QAction::triggered, this, &MainWindow::showPortEntry);
     this->ui->actionAbout->connect(this->ui->actionAbout, &QAction::triggered, this, &MainWindow::showAbout);
@@ -182,6 +184,10 @@ void MainWindow::serverBrowserContextMenu(const QPoint &pos)
         QAction *add = new QAction("Add Server", pContextMenu);
         add->connect(add, &QAction::triggered, this, [this]{addServerEntry();});
         pContextMenu->addAction(add);
+
+        QAction *batchAdd = new QAction("Batch Add Servers...", pContextMenu);
+        batchAdd->connect(batchAdd, &QAction::triggered, this, [this]{batchAddServerEntry();});
+        pContextMenu->addAction(batchAdd);
     }
     else
     {
@@ -221,6 +227,65 @@ void MainWindow::serverBrowserContextMenu(const QPoint &pos)
                 });
                 pContextMenu->addAction(removeGroup);
             }
+
+            pContextMenu->addSeparator();
+
+            // Set alias action
+            QAction *setAlias = new QAction(info->alias.isEmpty() ? "Set Alias..." : QString("Alias: %1 (Change...)").arg(info->alias), pContextMenu);
+            setAlias->connect(setAlias, &QAction::triggered, this, [this, info]{
+                bool ok;
+                QString alias = QInputDialog::getText(this, tr("Set Server Alias"), tr("Display name (leave empty to remove):"), QLineEdit::Normal, info->alias, &ok, Qt::WindowSystemMenuHint | Qt::WindowTitleHint);
+                if(ok)
+                {
+                    info->alias = alias.trimmed();
+                    // Refresh hostname display
+                    for(int i = 0; i < this->ui->browserTable->rowCount(); i++)
+                    {
+                        ServerTableIndexItem *sid = this->GetServerTableIndexItem(i);
+                        if(sid && sid->GetServerInfo() == info)
+                        {
+                            this->CreateTableItemOrUpdate(i, kBrowserColHostname, this->ui->browserTable, info);
+                            break;
+                        }
+                    }
+                    settings->SaveSettings();
+                }
+            });
+            pContextMenu->addAction(setAlias);
+
+            // Set notes action
+            QAction *setNotes = new QAction(info->notes.isEmpty() ? "Add Notes..." : "Edit Notes...", pContextMenu);
+            setNotes->connect(setNotes, &QAction::triggered, this, [this, info]{
+                QDialog dialog(this);
+                dialog.setWindowTitle("Server Notes");
+                dialog.setMinimumSize(400, 200);
+                QVBoxLayout *layout = new QVBoxLayout(&dialog);
+                QTextEdit *textEdit = new QTextEdit(&dialog);
+                textEdit->setPlainText(info->notes);
+                layout->addWidget(textEdit);
+                QHBoxLayout *btnLayout = new QHBoxLayout();
+                QPushButton *okBtn = new QPushButton("OK", &dialog);
+                QPushButton *cancelBtn = new QPushButton("Cancel", &dialog);
+                btnLayout->addStretch();
+                btnLayout->addWidget(okBtn);
+                btnLayout->addWidget(cancelBtn);
+                layout->addLayout(btnLayout);
+                connect(okBtn, &QPushButton::clicked, &dialog, &QDialog::accept);
+                connect(cancelBtn, &QPushButton::clicked, &dialog, &QDialog::reject);
+                if(dialog.exec() == QDialog::Accepted)
+                {
+                    info->notes = textEdit->toPlainText();
+                    settings->SaveSettings();
+                    // Refresh info table if this server is selected
+                    if(this->ui->browserTable->currentRow() >= 0)
+                    {
+                        ServerTableIndexItem *sid = this->GetServerTableIndexItem(this->ui->browserTable->currentRow());
+                        if(sid && sid->GetServerInfo() == info)
+                            this->UpdateInfoTable(info);
+                    }
+                }
+            });
+            pContextMenu->addAction(setNotes);
         }
     }
     pContextMenu->connect(pContextMenu, &QMenu::aboutToHide, this, &MainWindow::hideContextMenu);
@@ -262,49 +327,132 @@ void MainWindow::addServerEntry()
     }
 }
 
+void MainWindow::batchAddServerEntry()
+{
+    QDialog dialog(this);
+    dialog.setWindowTitle("Batch Add Servers");
+    dialog.setMinimumSize(400, 300);
+    QVBoxLayout *layout = new QVBoxLayout(&dialog);
+
+    QLabel *label = new QLabel("Enter server addresses (one per line, IP:Port):", &dialog);
+    layout->addWidget(label);
+
+    QTextEdit *textEdit = new QTextEdit(&dialog);
+    textEdit->setPlaceholderText("192.168.1.1:27015\n192.168.1.2:27015\nexample.com:27015");
+    layout->addWidget(textEdit);
+
+    QHBoxLayout *btnLayout = new QHBoxLayout();
+    QPushButton *addBtn = new QPushButton("Add All", &dialog);
+    QPushButton *cancelBtn = new QPushButton("Cancel", &dialog);
+    btnLayout->addStretch();
+    btnLayout->addWidget(addBtn);
+    btnLayout->addWidget(cancelBtn);
+    layout->addLayout(btnLayout);
+
+    connect(addBtn, &QPushButton::clicked, &dialog, &QDialog::accept);
+    connect(cancelBtn, &QPushButton::clicked, &dialog, &QDialog::reject);
+
+    if(dialog.exec() == QDialog::Accepted)
+    {
+        QString text = textEdit->toPlainText().trimmed();
+        if(text.isEmpty()) return;
+
+        QStringList lines = text.split('\n', QString::SkipEmptyParts);
+        int added = 0, skipped = 0;
+
+        for(int i = 0; i < lines.size(); i++)
+        {
+            QString server = lines.at(i).trimmed();
+            if(server.isEmpty()) continue;
+
+            AddServerError error;
+            this->AddServerToList(server, &error);
+
+            if(error == AddServerError_None || error == AddServerError_Hostname)
+                added++;
+            else
+                skipped++;
+        }
+
+        if(added > 0)
+            settings->SaveSettings();
+
+        if(skipped > 0)
+        {
+            QMessageBox msg(this);
+            msg.setText(QString("Added %1 server(s), skipped %2 (invalid or duplicate).").arg(added).arg(skipped));
+            msg.exec();
+        }
+        this->UpdateStatusBar();
+    }
+}
+
 bool MainWindow::deleteServerDialog()
 {
-    ServerTableIndexItem *id = this->GetServerTableIndexItem(this->ui->browserTable->currentRow());
+    // Collect unique selected rows
+    QList<int> selectedRows;
+    QList<QTableWidgetItem *> selectedItems = this->ui->browserTable->selectedItems();
+    for(int i = 0; i < selectedItems.size(); i++)
+    {
+        int r = selectedItems.at(i)->row();
+        if(!selectedRows.contains(r))
+            selectedRows.append(r);
+    }
 
-    if(!id)
+    if(selectedRows.isEmpty())
         return false;
 
-    ServerInfo *info = id->GetServerInfo();
-    int index = serverList.indexOf(info);
+    QString deleteText;
+    if(selectedRows.size() == 1)
+    {
+        ServerTableIndexItem *id = this->GetServerTableIndexItem(selectedRows.at(0));
+        if(!id) return false;
+        deleteText = QString("Delete %1?").arg(id->GetServerInfo()->hostPort);
+    }
+    else
+    {
+        deleteText = QString("Delete %1 servers?").arg(selectedRows.size());
+    }
 
     QMessageBox message(this);
-    message.setInformativeText(QString("Delete %1?").arg(info->hostPort));
-    message.setText("Delete server from list?");
+    message.setInformativeText(deleteText);
+    message.setText("Delete server(s) from list?");
     message.setStandardButtons(QMessageBox::Ok|QMessageBox::Cancel);
     message.setDefaultButton(QMessageBox::Cancel);
     int ret = message.exec();
 
     if(ret == QMessageBox::Ok)
     {
-        this->ui->browserTable->removeRow(this->ui->browserTable->currentRow());
+        // Sort rows descending so removal doesn't shift indices
+        std::sort(selectedRows.begin(), selectedRows.end(), std::greater<int>());
 
+        for(int i = 0; i < selectedRows.size(); i++)
+        {
+            int row = selectedRows.at(i);
+            ServerTableIndexItem *id = this->GetServerTableIndexItem(row);
+            if(!id) continue;
+
+            ServerInfo *info = id->GetServerInfo();
+            this->ui->browserTable->removeRow(row);
+            serverList.removeAll(info);
+            pLogHandler->removeServer(info);
+            delete info;
+        }
+
+        // Renumber remaining index items
         for(int i = 0; i < this->ui->browserTable->rowCount(); i++)
         {
             QTableWidgetItem *item = this->ui->browserTable->item(i, kBrowserColIndex);
-
-            int other = item->data(Qt::DisplayRole).toInt();
-
-            if(other > index)
-            {
-                item->setData(Qt::DisplayRole, other-1);
-            }
+            if(item)
+                item->setData(Qt::DisplayRole, i + 1);
         }
 
-        serverList.removeAll(info);
-        pLogHandler->removeServer(info);
-        delete info;
-        info = nullptr;
-
         settings->SaveSettings();
+        this->UpdateStatusBar();
+        this->UpdateGroupComboBox();
 
         if(this->ui->browserTable->selectedItems().size() == 0)
         {
-            //Clear everything no servers left.
             this->ui->rulesTable->setRowCount(0);
             this->ui->playerTable->setRowCount(0);
             this->ui->infoTable->setRowCount(0);
@@ -356,21 +504,21 @@ void MainWindow::darkThemeTriggered()
     if(this->ui->actionDark_Theme->isChecked())
     {
         QPalette palette;
-        palette.setColor(QPalette::Window, QColor(50,50,50));
-        palette.setColor(QPalette::WindowText, Qt::white);
-        palette.setColor(QPalette::Base, QColor(60,60,60));
-        palette.setColor(QPalette::AlternateBase, QColor(80,80,80));
-        palette.setColor(QPalette::ToolTipBase, Qt::white);
-        palette.setColor(QPalette::ToolTipText, Qt::white);
-        palette.setColor(QPalette::Text, Qt::white);
-        palette.setColor(QPalette::Button, QColor(50,50,50));
-        palette.setColor(QPalette::ButtonText, Qt::white);
-        palette.setColor(QPalette::BrightText, Qt::red);
+        palette.setColor(QPalette::Window, QColor(33,33,37));          // --background
+        palette.setColor(QPalette::WindowText, QColor(250,250,250));   // --foreground
+        palette.setColor(QPalette::Base, QColor(46,46,46));            // --card
+        palette.setColor(QPalette::AlternateBase, QColor(62,62,62));   // --secondary
+        palette.setColor(QPalette::ToolTipBase, QColor(46,46,46));     // --popover
+        palette.setColor(QPalette::ToolTipText, QColor(250,250,250));  // --popover-foreground
+        palette.setColor(QPalette::Text, QColor(250,250,250));         // --foreground
+        palette.setColor(QPalette::Button, QColor(33,33,37));          // --background
+        palette.setColor(QPalette::ButtonText, QColor(250,250,250));   // --foreground
+        palette.setColor(QPalette::BrightText, QColor(220,100,80));    // --destructive
 
-        palette.setColor(QPalette::Highlight, QColor(80,80,80).lighter());
-        palette.setColor(QPalette::HighlightedText, Qt::black);
-        palette.setColor(QPalette::Link,Qt::white);
-        palette.setColor(QPalette::LinkVisited, Qt::white);
+        palette.setColor(QPalette::Highlight, QColor(100,90,200));     // --sidebar-primary (~oklch 0.488 0.243 264)
+        palette.setColor(QPalette::HighlightedText, QColor(250,250,250)); // --sidebar-primary-foreground
+        palette.setColor(QPalette::Link, QColor(250,250,250));         // --foreground
+        palette.setColor(QPalette::LinkVisited, QColor(174,174,174));  // --muted-foreground
         qApp->setPalette(palette);
     }
     else

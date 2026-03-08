@@ -97,6 +97,9 @@ public:
     quint8 currentPlayers;
     quint8 maxPlayers;
     QString group;
+    QString alias;
+    QString notes;
+    QList<int> playerCountHistory;
 };
 
 class HostQueryResult : public QObject

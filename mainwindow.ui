@@ -89,7 +89,7 @@
          <bool>false</bool>
         </property>
         <property name="selectionMode">
-         <enum>QAbstractItemView::SingleSelection</enum>
+         <enum>QAbstractItemView::ExtendedSelection</enum>
         </property>
         <property name="selectionBehavior">
          <enum>QAbstractItemView::SelectRows</enum>
@@ -110,7 +110,7 @@
          <bool>false</bool>
         </property>
         <property name="columnCount">
-         <number>9</number>
+         <number>10</number>
         </property>
         <attribute name="horizontalHeaderHighlightSections">
          <bool>false</bool>
@@ -173,6 +173,11 @@
         <column>
          <property name="text">
           <string>Ping</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Group</string>
          </property>
         </column>
        </widget>
@@ -598,6 +603,7 @@
      <string>Servers</string>
     </property>
     <addaction name="actionAdd_Server"/>
+    <addaction name="actionBatch_Add_Servers"/>
    </widget>
    <widget class="QMenu" name="menuSettings">
     <property name="title">
@@ -616,6 +622,11 @@
    </property>
    <property name="text">
     <string>Add Server</string>
+   </property>
+  </action>
+  <action name="actionBatch_Add_Servers">
+   <property name="text">
+    <string>Batch Add Servers</string>
    </property>
   </action>
   <action name="actionDark_Theme">

@@ -74,6 +74,7 @@ void Settings::SetDefaultSettings()
     browserTable->setColumnWidth(kBrowserColMap,         150);
     browserTable->setColumnWidth(kBrowserColPlayerCount, 80);
     browserTable->setColumnWidth(kBrowserColPing,        70);
+    browserTable->setColumnWidth(kBrowserColGroup,      100);
 
     auto header = pMain->GetUi()->browserTable->horizontalHeader();
     header->setSectionResizeMode(kBrowserColIndex, QHeaderView::ResizeToContents);
@@ -85,6 +86,7 @@ void Settings::SetDefaultSettings()
     header->setSectionResizeMode(kBrowserColMap, QHeaderView::ResizeToContents);
     header->setSectionResizeMode(kBrowserColPlayerCount, QHeaderView::Fixed);
     header->setSectionResizeMode(kBrowserColPing, QHeaderView::Fixed);
+    header->setSectionResizeMode(kBrowserColGroup, QHeaderView::ResizeToContents);
 
     browserTable->horizontalHeaderItem(kBrowserColPlayerCount)->setTextAlignment(Qt::AlignLeft);
     browserTable->horizontalHeaderItem(kBrowserColPing)->setTextAlignment(Qt::AlignLeft);
@@ -193,7 +195,28 @@ void Settings::ReadSettings()
         }
     }
     pSettings->endGroup();
+
+    // Read extended server data (alias, notes)
+    pSettings->beginGroup("server_extra");
+    for(int i = 0; i < serverList.size(); i++)
+    {
+        ServerInfo *info = serverList.at(i);
+        QString key = QString::number(i + 1);
+        info->alias = pSettings->value(key + "/alias", "").toString();
+        info->notes = pSettings->value(key + "/notes", "").toString();
+    }
+    pSettings->endGroup();
+
     pMain->UpdateGroupComboBox();
+
+    // Update group column for all loaded servers
+    for(int i = 0; i < pMain->GetUi()->browserTable->rowCount(); i++)
+    {
+        ServerTableIndexItem *id = pMain->GetServerTableIndexItem(i);
+        if(id)
+            pMain->UpdateGroupColumn(i, id->GetServerInfo());
+    }
+
     this->SaveSettings();//Call this again to make sure we cleaned up any garbage entries
 }
 
@@ -259,6 +282,23 @@ void Settings::SaveSettings()
         }
     }
 
+    pSettings->endGroup();
+
+    // Save extended server data (alias, notes)
+    pSettings->beginGroup("server_extra");
+    pSettings->remove("");
+    if(serverList.size() > 0)
+    {
+        for(int i = 0; i < serverList.size(); i++)
+        {
+            ServerInfo *info = serverList.at(i);
+            QString key = QString::number(i + 1);
+            if(!info->alias.isEmpty())
+                pSettings->setValue(key + "/alias", info->alias);
+            if(!info->notes.isEmpty())
+                pSettings->setValue(key + "/notes", info->notes);
+        }
+    }
     pSettings->endGroup();
 }
 

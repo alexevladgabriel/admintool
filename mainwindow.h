@@ -11,6 +11,8 @@
 #include <QLineEdit>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QLabel>
+#include <QStatusBar>
 #include "query.h"
 #include "serverinfo.h"
 #include "loghandler.h"
@@ -88,6 +90,7 @@ enum : size_t
     kBrowserColMap,
     kBrowserColPlayerCount,
     kBrowserColPing,
+    kBrowserColGroup,
 
     kBrowserColCount
 };
@@ -117,6 +120,7 @@ public:
     Ui::MainWindow *GetUi(){return ui;}
     QCheckBox *GetHideOfflineCheck(){return hideOfflineCheck;}
     void UpdateGroupComboBox();
+    void UpdateGroupColumn(int row, ServerInfo *info);
     ~MainWindow();
     void parseLogLine(QString, ServerInfo *);
     PlayerQuery *pPlayerQuery;
@@ -142,6 +146,7 @@ public slots:
 
 private slots:
     void addServerEntry();
+    void batchAddServerEntry();
     void browserTableItemSelected();
     void TimedUpdate();
     void processCommand();
@@ -178,7 +183,10 @@ private:
     void connectToServer();
     void ApplyBrowserFilter();
     void SetServerGroup(ServerInfo *info, const QString &group);
+    void UpdateStatusBar();
+    QColor GetGroupColor(const QString &group);
     LogHandler *pLogHandler;
+    QLabel *statusBarLabel;
     QLineEdit *filterEdit;
     QCheckBox *hideOfflineCheck;
     QComboBox *groupFilterCombo;

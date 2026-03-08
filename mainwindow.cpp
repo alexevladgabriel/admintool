@@ -6,6 +6,7 @@
 #include <QTimer>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QStatusBar>
 
 extern Settings *settings;
 extern QList<ServerInfo *> serverList;
@@ -49,6 +50,10 @@ MainWindow::MainWindow(QWidget *parent) :
     QGridLayout *grid = qobject_cast<QGridLayout *>(ui->centralWidget->layout());
     grid->addWidget(filterBar, 0, 0);
     grid->addWidget(ui->splitter, 1, 0);
+
+    // Status summary bar
+    statusBarLabel = new QLabel(this);
+    statusBar()->addWidget(statusBarLabel, 1);
 
     this->SetRconEnabled(false);
     settings = new Settings(this);
@@ -164,6 +169,7 @@ ServerInfo *MainWindow::AddServerToList(QString server, AddServerError *pError)
     ui->browserTable->setItem(row, kBrowserColIndex, id);
 
     this->CreateTableItemOrUpdate(row, kBrowserColHostname, ui->browserTable, info);
+    this->UpdateGroupColumn(row, info);
 
     if(isIP)
     {
@@ -246,12 +252,15 @@ void MainWindow::ApplyBrowserFilter()
             visible = false;
         }
 
-        // Filter by text (match against server name, map, or host:port)
+        // Filter by text (match against server name, alias, map, or host:port)
         if(visible && !filterText.isEmpty())
         {
             bool matches = false;
             // Check hostPort
             if(info->hostPort.contains(filterText, Qt::CaseInsensitive))
+                matches = true;
+            // Check alias
+            if(!matches && !info->alias.isEmpty() && info->alias.contains(filterText, Qt::CaseInsensitive))
                 matches = true;
             // Check server name (strip HTML tags for comparison)
             if(!matches && !info->serverNameRich.isEmpty())
@@ -298,7 +307,81 @@ void MainWindow::UpdateGroupComboBox()
 void MainWindow::SetServerGroup(ServerInfo *info, const QString &group)
 {
     info->group = group;
+    // Update group column for this server's row
+    for(int i = 0; i < this->ui->browserTable->rowCount(); i++)
+    {
+        ServerTableIndexItem *id = this->GetServerTableIndexItem(i);
+        if(id && id->GetServerInfo() == info)
+        {
+            UpdateGroupColumn(i, info);
+            break;
+        }
+    }
     UpdateGroupComboBox();
     ApplyBrowserFilter();
     settings->SaveSettings();
+}
+
+void MainWindow::UpdateStatusBar()
+{
+    int online = 0, offline = 0, totalPlayers = 0, totalMaxPlayers = 0;
+
+    for(int i = 0; i < serverList.size(); i++)
+    {
+        ServerInfo *info = serverList.at(i);
+        if(info->queryState == QuerySuccess)
+        {
+            online++;
+            totalPlayers += info->currentPlayers;
+            totalMaxPlayers += info->maxPlayers;
+        }
+        else if(info->queryState == QueryFailed || info->queryState == QueryResolveFailed)
+        {
+            offline++;
+        }
+    }
+
+    int querying = serverList.size() - online - offline;
+    QString status = QString("%1 Online, %2 Offline, %3/%4 Players")
+        .arg(QString::number(online), QString::number(offline),
+             QString::number(totalPlayers), QString::number(totalMaxPlayers));
+    if(querying > 0)
+        status += QString(", %1 Querying").arg(querying);
+
+    statusBarLabel->setText(status);
+}
+
+void MainWindow::UpdateGroupColumn(int row, ServerInfo *info)
+{
+    QTableWidgetItem *item = this->ui->browserTable->item(row, kBrowserColGroup);
+    if(!item)
+    {
+        item = new QTableWidgetItem();
+        this->ui->browserTable->setItem(row, kBrowserColGroup, item);
+    }
+    item->setText(info->group);
+
+    if(!info->group.isEmpty())
+    {
+        QColor groupColor = GetGroupColor(info->group);
+        item->setBackground(groupColor);
+        // Use dark text on light backgrounds, light text on dark backgrounds
+        int brightness = (groupColor.red() * 299 + groupColor.green() * 587 + groupColor.blue() * 114) / 1000;
+        item->setTextColor(brightness > 128 ? Qt::black : Qt::white);
+    }
+    else
+    {
+        item->setBackground(QBrush());
+        item->setTextColor(this->GetTextColor());
+    }
+}
+
+QColor MainWindow::GetGroupColor(const QString &group)
+{
+    if(group.isEmpty())
+        return QColor();
+
+    uint hash = qHash(group);
+    int hue = hash % 360;
+    return QColor::fromHsl(hue, 100, 160);
 }

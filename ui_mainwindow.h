@@ -36,6 +36,7 @@ class Ui_MainWindow
 {
 public:
     QAction *actionAdd_Server;
+    QAction *actionBatch_Add_Servers;
     QAction *actionDark_Theme;
     QAction *actionSet_Log_Port;
     QAction *actionAbout;
@@ -84,6 +85,8 @@ public:
         actionAdd_Server = new QAction(MainWindow);
         actionAdd_Server->setObjectName(QString::fromUtf8("actionAdd_Server"));
         actionAdd_Server->setCheckable(false);
+        actionBatch_Add_Servers = new QAction(MainWindow);
+        actionBatch_Add_Servers->setObjectName(QString::fromUtf8("actionBatch_Add_Servers"));
         actionDark_Theme = new QAction(MainWindow);
         actionDark_Theme->setObjectName(QString::fromUtf8("actionDark_Theme"));
         actionDark_Theme->setCheckable(true);
@@ -113,8 +116,8 @@ public:
         browserSplitter->setOrientation(Qt::Horizontal);
         browserSplitter->setHandleWidth(5);
         browserTable = new QTableWidget(browserSplitter);
-        if (browserTable->columnCount() < 9)
-            browserTable->setColumnCount(9);
+        if (browserTable->columnCount() < 10)
+            browserTable->setColumnCount(10);
         QTableWidgetItem *__qtablewidgetitem = new QTableWidgetItem();
         browserTable->setHorizontalHeaderItem(0, __qtablewidgetitem);
         QTableWidgetItem *__qtablewidgetitem1 = new QTableWidgetItem();
@@ -133,6 +136,8 @@ public:
         browserTable->setHorizontalHeaderItem(7, __qtablewidgetitem7);
         QTableWidgetItem *__qtablewidgetitem8 = new QTableWidgetItem();
         browserTable->setHorizontalHeaderItem(8, __qtablewidgetitem8);
+        QTableWidgetItem *__qtablewidgetitem9 = new QTableWidgetItem();
+        browserTable->setHorizontalHeaderItem(9, __qtablewidgetitem9);
         browserTable->setObjectName(QString::fromUtf8("browserTable"));
         browserTable->setEnabled(true);
         browserTable->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -146,13 +151,13 @@ public:
         browserTable->setDragDropMode(QAbstractItemView::NoDragDrop);
         browserTable->setDefaultDropAction(Qt::IgnoreAction);
         browserTable->setAlternatingRowColors(false);
-        browserTable->setSelectionMode(QAbstractItemView::SingleSelection);
+        browserTable->setSelectionMode(QAbstractItemView::ExtendedSelection);
         browserTable->setSelectionBehavior(QAbstractItemView::SelectRows);
         browserTable->setIconSize(QSize(0, 0));
         browserTable->setShowGrid(false);
         browserTable->setSortingEnabled(true);
         browserTable->setWordWrap(false);
-        browserTable->setColumnCount(9);
+        browserTable->setColumnCount(10);
         browserSplitter->addWidget(browserTable);
         browserTable->horizontalHeader()->setHighlightSections(false);
         browserTable->horizontalHeader()->setStretchLastSection(false);
@@ -163,10 +168,10 @@ public:
         infoTable = new QTableWidget(browserSplitter);
         if (infoTable->columnCount() < 2)
             infoTable->setColumnCount(2);
-        QTableWidgetItem *__qtablewidgetitem9 = new QTableWidgetItem();
-        infoTable->setHorizontalHeaderItem(0, __qtablewidgetitem9);
         QTableWidgetItem *__qtablewidgetitem10 = new QTableWidgetItem();
-        infoTable->setHorizontalHeaderItem(1, __qtablewidgetitem10);
+        infoTable->setHorizontalHeaderItem(0, __qtablewidgetitem10);
+        QTableWidgetItem *__qtablewidgetitem11 = new QTableWidgetItem();
+        infoTable->setHorizontalHeaderItem(1, __qtablewidgetitem11);
         infoTable->setObjectName(QString::fromUtf8("infoTable"));
         infoTable->setEnabled(true);
         QSizePolicy sizePolicy1(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -198,10 +203,10 @@ public:
         rulesTable = new QTableWidget(rulesSplitter);
         if (rulesTable->columnCount() < 2)
             rulesTable->setColumnCount(2);
-        QTableWidgetItem *__qtablewidgetitem11 = new QTableWidgetItem();
-        rulesTable->setHorizontalHeaderItem(0, __qtablewidgetitem11);
         QTableWidgetItem *__qtablewidgetitem12 = new QTableWidgetItem();
-        rulesTable->setHorizontalHeaderItem(1, __qtablewidgetitem12);
+        rulesTable->setHorizontalHeaderItem(0, __qtablewidgetitem12);
+        QTableWidgetItem *__qtablewidgetitem13 = new QTableWidgetItem();
+        rulesTable->setHorizontalHeaderItem(1, __qtablewidgetitem13);
         rulesTable->setObjectName(QString::fromUtf8("rulesTable"));
         rulesTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
         rulesTable->setProperty("showDropIndicator", QVariant(false));
@@ -221,16 +226,16 @@ public:
         playerTable = new QTableWidget(rulesSplitter);
         if (playerTable->columnCount() < 5)
             playerTable->setColumnCount(5);
-        QTableWidgetItem *__qtablewidgetitem13 = new QTableWidgetItem();
-        playerTable->setHorizontalHeaderItem(0, __qtablewidgetitem13);
         QTableWidgetItem *__qtablewidgetitem14 = new QTableWidgetItem();
-        playerTable->setHorizontalHeaderItem(1, __qtablewidgetitem14);
+        playerTable->setHorizontalHeaderItem(0, __qtablewidgetitem14);
         QTableWidgetItem *__qtablewidgetitem15 = new QTableWidgetItem();
-        playerTable->setHorizontalHeaderItem(2, __qtablewidgetitem15);
+        playerTable->setHorizontalHeaderItem(1, __qtablewidgetitem15);
         QTableWidgetItem *__qtablewidgetitem16 = new QTableWidgetItem();
-        playerTable->setHorizontalHeaderItem(3, __qtablewidgetitem16);
+        playerTable->setHorizontalHeaderItem(2, __qtablewidgetitem16);
         QTableWidgetItem *__qtablewidgetitem17 = new QTableWidgetItem();
-        playerTable->setHorizontalHeaderItem(4, __qtablewidgetitem17);
+        playerTable->setHorizontalHeaderItem(3, __qtablewidgetitem17);
+        QTableWidgetItem *__qtablewidgetitem18 = new QTableWidgetItem();
+        playerTable->setHorizontalHeaderItem(4, __qtablewidgetitem18);
         playerTable->setObjectName(QString::fromUtf8("playerTable"));
         playerTable->setMinimumSize(QSize(100, 100));
         playerTable->setBaseSize(QSize(0, 0));
@@ -396,6 +401,7 @@ public:
         menuBar->addAction(menuFile->menuAction());
         menuBar->addAction(menuSettings->menuAction());
         menuFile->addAction(actionAdd_Server);
+        menuFile->addAction(actionBatch_Add_Servers);
         menuSettings->addAction(actionDark_Theme);
         menuSettings->addAction(actionSet_Log_Port);
         menuSettings->addAction(actionAbout);
@@ -412,6 +418,7 @@ public:
     {
         MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
         actionAdd_Server->setText(QCoreApplication::translate("MainWindow", "Add Server", nullptr));
+        actionBatch_Add_Servers->setText(QCoreApplication::translate("MainWindow", "Batch Add Servers", nullptr));
         actionDark_Theme->setText(QCoreApplication::translate("MainWindow", "Dark Theme", nullptr));
         actionSet_Log_Port->setText(QCoreApplication::translate("MainWindow", "Set Log Port", nullptr));
         actionAbout->setText(QCoreApplication::translate("MainWindow", "About", nullptr));
@@ -425,24 +432,26 @@ public:
         ___qtablewidgetitem3->setText(QCoreApplication::translate("MainWindow", "Players", nullptr));
         QTableWidgetItem *___qtablewidgetitem4 = browserTable->horizontalHeaderItem(8);
         ___qtablewidgetitem4->setText(QCoreApplication::translate("MainWindow", "Ping", nullptr));
-        QTableWidgetItem *___qtablewidgetitem5 = infoTable->horizontalHeaderItem(0);
-        ___qtablewidgetitem5->setText(QCoreApplication::translate("MainWindow", "New Column", nullptr));
-        QTableWidgetItem *___qtablewidgetitem6 = infoTable->horizontalHeaderItem(1);
-        ___qtablewidgetitem6->setText(QCoreApplication::translate("MainWindow", "Value", nullptr));
-        QTableWidgetItem *___qtablewidgetitem7 = rulesTable->horizontalHeaderItem(0);
-        ___qtablewidgetitem7->setText(QCoreApplication::translate("MainWindow", "Rule", nullptr));
-        QTableWidgetItem *___qtablewidgetitem8 = rulesTable->horizontalHeaderItem(1);
-        ___qtablewidgetitem8->setText(QCoreApplication::translate("MainWindow", "Value", nullptr));
-        QTableWidgetItem *___qtablewidgetitem9 = playerTable->horizontalHeaderItem(0);
-        ___qtablewidgetitem9->setText(QCoreApplication::translate("MainWindow", "#", nullptr));
-        QTableWidgetItem *___qtablewidgetitem10 = playerTable->horizontalHeaderItem(1);
-        ___qtablewidgetitem10->setText(QCoreApplication::translate("MainWindow", "Player Name", nullptr));
-        QTableWidgetItem *___qtablewidgetitem11 = playerTable->horizontalHeaderItem(2);
-        ___qtablewidgetitem11->setText(QCoreApplication::translate("MainWindow", "Score", nullptr));
-        QTableWidgetItem *___qtablewidgetitem12 = playerTable->horizontalHeaderItem(3);
-        ___qtablewidgetitem12->setText(QCoreApplication::translate("MainWindow", "Time", nullptr));
-        QTableWidgetItem *___qtablewidgetitem13 = playerTable->horizontalHeaderItem(4);
-        ___qtablewidgetitem13->setText(QCoreApplication::translate("MainWindow", "Steam ID", nullptr));
+        QTableWidgetItem *___qtablewidgetitem5 = browserTable->horizontalHeaderItem(9);
+        ___qtablewidgetitem5->setText(QCoreApplication::translate("MainWindow", "Group", nullptr));
+        QTableWidgetItem *___qtablewidgetitem6 = infoTable->horizontalHeaderItem(0);
+        ___qtablewidgetitem6->setText(QCoreApplication::translate("MainWindow", "New Column", nullptr));
+        QTableWidgetItem *___qtablewidgetitem7 = infoTable->horizontalHeaderItem(1);
+        ___qtablewidgetitem7->setText(QCoreApplication::translate("MainWindow", "Value", nullptr));
+        QTableWidgetItem *___qtablewidgetitem8 = rulesTable->horizontalHeaderItem(0);
+        ___qtablewidgetitem8->setText(QCoreApplication::translate("MainWindow", "Rule", nullptr));
+        QTableWidgetItem *___qtablewidgetitem9 = rulesTable->horizontalHeaderItem(1);
+        ___qtablewidgetitem9->setText(QCoreApplication::translate("MainWindow", "Value", nullptr));
+        QTableWidgetItem *___qtablewidgetitem10 = playerTable->horizontalHeaderItem(0);
+        ___qtablewidgetitem10->setText(QCoreApplication::translate("MainWindow", "#", nullptr));
+        QTableWidgetItem *___qtablewidgetitem11 = playerTable->horizontalHeaderItem(1);
+        ___qtablewidgetitem11->setText(QCoreApplication::translate("MainWindow", "Player Name", nullptr));
+        QTableWidgetItem *___qtablewidgetitem12 = playerTable->horizontalHeaderItem(2);
+        ___qtablewidgetitem12->setText(QCoreApplication::translate("MainWindow", "Score", nullptr));
+        QTableWidgetItem *___qtablewidgetitem13 = playerTable->horizontalHeaderItem(3);
+        ___qtablewidgetitem13->setText(QCoreApplication::translate("MainWindow", "Time", nullptr));
+        QTableWidgetItem *___qtablewidgetitem14 = playerTable->horizontalHeaderItem(4);
+        ___qtablewidgetitem14->setText(QCoreApplication::translate("MainWindow", "Steam ID", nullptr));
         rconLabel->setText(QCoreApplication::translate("MainWindow", "RCon Password", nullptr));
         rconSave->setText(QCoreApplication::translate("MainWindow", "Save Password", nullptr));
         rconShow->setText(QCoreApplication::translate("MainWindow", "Show Password", nullptr));

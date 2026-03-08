@@ -164,9 +164,11 @@ void MainWindow::CreateTableItemOrUpdate(size_t row, size_t col, QTableWidget *t
                 {
                     item->setText("");
                     auto *hostnameLabel = new QLabel();
-                    QString hostname;
                     hostnameLabel->setTextFormat(Qt::RichText);
-                    hostnameLabel->setText(info->serverNameRich);
+                    if(!info->alias.isEmpty())
+                        hostnameLabel->setText(QString("<b>%1</b> <span style='color:gray;'>(%2)</span>").arg(info->alias.toHtmlEscaped(), info->serverNameRich));
+                    else
+                        hostnameLabel->setText(info->serverNameRich);
                     table->setCellWidget(row, col, hostnameLabel);
                 }
                 else if(info->queryState == QueryFailed)
@@ -275,9 +277,14 @@ void MainWindow::UpdateInfoTable(ServerInfo *info, bool current, QList<RulesInfo
         QList<InfoTableItem> items;
         items.append(InfoTableItem("Server IP", info->hostPort));
         items.append(InfoTableItem("PingGraph", ""));//Not used but place holder
+        if(!info->alias.isEmpty())
+            items.append(InfoTableItem("Alias", info->alias));
         items.append(InfoTableItem("Server Name", info->serverNameRich, true));
+        if(!info->group.isEmpty())
+            items.append(InfoTableItem("Group", info->group));
         items.append(InfoTableItem("Game", gameString));
         items.append(InfoTableItem("Players", info->playerCount));
+        items.append(InfoTableItem("PlayerGraph", ""));//Placeholder for player count graph
         items.append(InfoTableItem("Map", mapString));
         items.append(InfoTableItem("Timelimit", info->timelimit));
         //This line is ugly, but im way too lazy.
@@ -296,15 +303,17 @@ void MainWindow::UpdateInfoTable(ServerInfo *info, bool current, QList<RulesInfo
         items.append(InfoTableItem("Addons", modString));
         items.append(InfoTableItem("AntiCheat", info->vac ? "VAC" : ""));
         items.append(InfoTableItem("Steam ID", info->serverID));
+        if(!info->notes.isEmpty())
+            items.append(InfoTableItem("Notes", info->notes));
 
-        quint8 row = 0;
+        quint16 row = 0;
         InfoTableItem item;
 
         for(int i = 0; i < items.length(); i++)
         {
             item = items.at(i);
 
-            if(i == 1)//Ping graph
+            if(item.display == "PingGraph")//Ping graph
             {
                 this->ui->infoTable->insertRow(row);
                 this->ui->infoTable->setSpan(row, 0, 1, 2);
@@ -322,9 +331,9 @@ void MainWindow::UpdateInfoTable(ServerInfo *info, bool current, QList<RulesInfo
 
                 int idx = (info->pingList.length() - this->ui->infoTable->width()) > 0 ? info->pingList.length() - this->ui->infoTable->width() : 0;
 
-                for(int i = idx; i < info->pingList.length(); i++)
+                for(int j = idx; j < info->pingList.length(); j++)
                 {
-                    int h = qRound(((float)info->pingList.at(i)/300.0)*50);
+                    int h = qRound(((float)info->pingList.at(j)/300.0)*50);
 
                     if(h <= 1)
                         h = 2;
@@ -332,14 +341,46 @@ void MainWindow::UpdateInfoTable(ServerInfo *info, bool current, QList<RulesInfo
                     if(h >= 50)
                         h = 50;
 
-                    painter.drawRect((1*(i-idx)), 50-h, 1, h);
+                    painter.drawRect((1*(j-idx)), 50-h, 1, h);
                 }
                 QLabel *label = new QLabel(this);
                 label->setPixmap(pixmap);
                 this->ui->infoTable->setCellWidget(row, 0, label);
                 row++;
             }
-            else if(!item.val.isEmpty())
+            else if(item.display == "PlayerGraph" && info->playerCountHistory.length() > 1)
+            {
+                // Player count history graph
+                this->ui->infoTable->insertRow(row);
+                this->ui->infoTable->setSpan(row, 0, 1, 2);
+                this->ui->infoTable->setRowHeight(row, 50);
+                QPixmap pixmap(this->ui->infoTable->width(), 50);
+                pixmap.fill(Qt::transparent);
+
+                QPainter painter(&pixmap);
+                painter.setPen(QPen(Qt::transparent));
+
+                QLinearGradient lgrad(QPoint(0, 0), QPoint(0, 50));
+                lgrad.setColorAt(0.0, QColor(255, 165, 0)); // orange at top (full)
+                lgrad.setColorAt(1.0, QColor(0, 150, 255));  // blue at bottom (empty)
+                painter.setBrush(lgrad);
+
+                int maxP = info->maxPlayers > 0 ? info->maxPlayers : 32;
+                int idx = (info->playerCountHistory.length() - this->ui->infoTable->width()) > 0 ? info->playerCountHistory.length() - this->ui->infoTable->width() : 0;
+
+                for(int j = idx; j < info->playerCountHistory.length(); j++)
+                {
+                    int h = qRound(((float)info->playerCountHistory.at(j) / (float)maxP) * 50);
+                    if(h <= 0) h = 1;
+                    if(h > 50) h = 50;
+                    painter.drawRect((j - idx), 50 - h, 1, h);
+                }
+                QLabel *label = new QLabel(this);
+                label->setPixmap(pixmap);
+                this->ui->infoTable->setCellWidget(row, 0, label);
+                row++;
+            }
+            else if(!item.val.isEmpty() && item.display != "PlayerGraph")
             {
                 this->ui->infoTable->insertRow(row);
                 this->ui->infoTable->setItem(row, 0, new QTableWidgetItem(item.display));
@@ -440,6 +481,11 @@ void MainWindow::ServerInfoReady(InfoReply *reply, ServerTableIndexItem *indexCe
         info->maxPlayers = reply->maxplayers;
         info->currentPlayers = reply->players;
 
+        // Track player count history
+        while(info->playerCountHistory.length() >= 1000)
+            info->playerCountHistory.removeFirst();
+        info->playerCountHistory.append(reply->players);
+
         if (!info->countryFlag.isNull())
         {
             this->CreateTableItemOrUpdate(row, kBrowserColFlagIcon, browserTable, info);
@@ -484,6 +530,7 @@ void MainWindow::ServerInfoReady(InfoReply *reply, ServerTableIndexItem *indexCe
     }
     this->UpdateInfoTable(info, (row == this->ui->browserTable->currentRow()));
     this->ApplyBrowserFilter();
+    this->UpdateStatusBar();
 }
 
 void MainWindow::PlayerInfoReady(QList<PlayerInfo> *list, ServerTableIndexItem *indexCell)
