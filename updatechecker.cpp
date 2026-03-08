@@ -42,7 +42,7 @@ void UpdateChecker::checkForUpdates(bool force)
 
     if(!force)
     {
-        QSettings settings(BuildPath("settings.ini"), QSettings::IniFormat);
+        QSettings settings(BuildUserPath("settings.ini"), QSettings::IniFormat);
         qint64 lastCheck = settings.value("updater/lastCheckTime", 0).toLongLong();
         qint64 now = QDateTime::currentSecsSinceEpoch();
         if(now - lastCheck < CHECK_INTERVAL_SECS)
@@ -70,7 +70,7 @@ void UpdateChecker::onReplyFinished(QNetworkReply *reply)
     }
 
     // Update last check time
-    QSettings settings(BuildPath("settings.ini"), QSettings::IniFormat);
+    QSettings settings(BuildUserPath("settings.ini"), QSettings::IniFormat);
     settings.setValue("updater/lastCheckTime", QDateTime::currentSecsSinceEpoch());
 
     QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());

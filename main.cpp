@@ -7,6 +7,7 @@ QPalette defaultPalette;
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    a.setApplicationName("SourceAdminTool");
     a.setStyle(QStyleFactory::create("Fusion"));
 
     defaultPalette = a.palette();

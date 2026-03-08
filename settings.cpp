@@ -22,7 +22,7 @@ QList<ContextMenuItem> contextMenuItems;
 Settings::Settings(MainWindow *main)
 {
     this->pMain = main;
-    this->pSettings = new QSettings(BuildPath("settings.ini"), QSettings::IniFormat);
+    this->pSettings = new QSettings(BuildUserPath("settings.ini"), QSettings::IniFormat);
     this->pAppIds = new QSettings(BuildPath("app_list_map.ini"), QSettings::IniFormat);
     GetAppIDListMap();
 }
