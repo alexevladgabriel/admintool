@@ -91,8 +91,8 @@ jobs:
             -days 1 -nodes -subj "/CN=SAT Build" \
             -addext "keyUsage=digitalSignature" \
             -addext "extendedKeyUsage=codeSigning"
-          openssl pkcs12 -export -out /tmp/cs.p12 -inkey /tmp/cs.key -in /tmp/cs.crt -passout pass:
-          security import /tmp/cs.p12 -k "$KEYCHAIN" -P "" -T /usr/bin/codesign
+          openssl pkcs12 -export -out /tmp/cs.p12 -inkey /tmp/cs.key -in /tmp/cs.crt -passout pass:build -legacy
+          security import /tmp/cs.p12 -k "$KEYCHAIN" -P "build" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASS" "$KEYCHAIN"
           IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" | head -1 | grep -oE '"[^"]+"' | tr -d '"')
           echo "Signing identity: $IDENTITY"
