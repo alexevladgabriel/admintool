@@ -418,7 +418,7 @@
          <bool>true</bool>
         </property>
         <attribute name="title">
-         <string>RCon</string>
+         <string>RCON</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_2">
          <item row="0" column="0">
@@ -445,7 +445,7 @@
                   </size>
                  </property>
                  <property name="text">
-                  <string>RCon Password</string>
+                  <string>RCON Password</string>
                  </property>
                 </widget>
                </item>

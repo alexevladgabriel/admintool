@@ -25,7 +25,7 @@ void MainWindow::getLog()
 
     if(!pLogIP || pLogIP->isNull())
     {
-        QMessageBox::critical(this, "Log Handler Error", "Failed to get logging ip. Logging can not be enabled.");
+        QMessageBox::critical(this, "Log Handler Error", "Failed to get logging IP. Logging cannot be enabled.");
         return;
     }
     else if(!info->rcon || !info->rcon->isAuthed)
