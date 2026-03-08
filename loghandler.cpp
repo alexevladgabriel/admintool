@@ -272,11 +272,16 @@ void Worker::setupUPnP(LogHandler *logger)
     }
 
     char lanaddress[64] = "";
+    char wanaddress[64] = "";
 
     UPNPUrls urls;
     IGDdatas data;
 
+#if MINIUPNPC_API_VERSION >= 18
+    UPNP_GetValidIGD(devlist, &urls, &data, lanaddress, sizeof(lanaddress), wanaddress, sizeof(wanaddress));
+#else
     UPNP_GetValidIGD(devlist, &urls, &data, lanaddress, sizeof(lanaddress));
+#endif
 
     logger->setInternalIP(QString(lanaddress));
 

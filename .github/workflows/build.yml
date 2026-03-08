@@ -29,6 +29,18 @@ jobs:
         shell: bash
         run: echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
+      - name: Install dependencies (Linux)
+        if: startsWith(runner.os, 'Linux')
+        run: sudo apt-get update && sudo apt-get install -y libminiupnpc-dev libmaxminddb-dev
+
+      - name: Install dependencies (macOS)
+        if: startsWith(runner.os, 'macOS')
+        run: brew install miniupnpc libmaxminddb
+
+      - name: Install dependencies (Windows)
+        if: startsWith(runner.os, 'Windows')
+        run: vcpkg install miniupnpc libmaxminddb --triplet x64-windows
+
       - name: Configure MSVC
         if: startsWith(runner.os, 'Windows')
         uses: ilammy/msvc-dev-cmd@v1
@@ -42,7 +54,13 @@ jobs:
           version: '6.9.0'
 
       - name: Configure
+        if: "!startsWith(runner.os, 'Windows')"
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Configure (Windows)
+        if: startsWith(runner.os, 'Windows')
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+
       - name: Build
         run: cmake --build build --config Release -j4
 

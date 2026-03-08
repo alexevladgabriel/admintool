@@ -51,9 +51,48 @@ qt_add_executable(${PROJECT_NAME}
     ${RESOURCES}
 )
 
+# Find third-party libraries (system or bundled)
+find_library(MINIUPNPC_LIB NAMES miniupnpc)
+find_path(MINIUPNPC_INCLUDE miniupnpc/miniupnpc.h)
+find_library(MAXMINDDB_LIB NAMES maxminddb libmaxminddb)
+find_path(MAXMINDDB_INCLUDE maxminddb.h)
+
+if(MINIUPNPC_LIB AND MINIUPNPC_INCLUDE)
+    message(STATUS "Found system miniupnpc: ${MINIUPNPC_LIB}")
+    # System headers are under miniupnpc/ subfolder, code uses #include <miniupnpc.h>
+    set(UPNPC_INCLUDE_DIR ${MINIUPNPC_INCLUDE}/miniupnpc)
+    set(UPNPC_LIBRARY ${MINIUPNPC_LIB})
+else()
+    message(STATUS "Using bundled miniupnpc")
+    set(UPNPC_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/miniupnpc)
+    if(WIN32)
+        set(UPNPC_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/miniupnpc/lib/win/miniupnpc.lib)
+    elseif(APPLE)
+        set(UPNPC_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/miniupnpc/lib/mac/libminiupnpc.a)
+    else()
+        set(UPNPC_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/miniupnpc/lib/linux/libminiupnpc.a)
+    endif()
+endif()
+
+if(MAXMINDDB_LIB AND MAXMINDDB_INCLUDE)
+    message(STATUS "Found system libmaxminddb: ${MAXMINDDB_LIB}")
+    set(MMDB_INCLUDE_DIR ${MAXMINDDB_INCLUDE})
+    set(MMDB_LIBRARY ${MAXMINDDB_LIB})
+else()
+    message(STATUS "Using bundled libmaxminddb")
+    set(MMDB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libmaxminddb)
+    if(WIN32)
+        set(MMDB_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libmaxminddb/lib/win/libmaxminddb.lib)
+    elseif(APPLE)
+        set(MMDB_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libmaxminddb/lib/mac/libmaxminddb.a)
+    else()
+        set(MMDB_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libmaxminddb/lib/linux/libmaxminddb.a)
+    endif()
+endif()
+
 target_include_directories(${PROJECT_NAME} PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/miniupnpc
-    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libmaxminddb
+    ${UPNPC_INCLUDE_DIR}
+    ${MMDB_INCLUDE_DIR}
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -61,16 +100,13 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Gui
     Qt6::Network
     Qt6::Widgets
+    ${UPNPC_LIBRARY}
+    ${MMDB_LIBRARY}
 )
 
 if(WIN32)
     target_sources(${PROJECT_NAME} PRIVATE sourceadmin.rc)
     target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 IPHlpApi)
-    target_link_directories(${PROJECT_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/miniupnpc/lib/win
-        ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libmaxminddb/lib/win
-    )
-    target_link_libraries(${PROJECT_NAME} PRIVATE miniupnpc libmaxminddb)
 elseif(APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE TRUE
@@ -94,23 +130,9 @@ elseif(APPLE)
         )
         target_sources(${PROJECT_NAME} PRIVATE ${FILE})
     endforeach()
-
-    target_link_directories(${PROJECT_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/miniupnpc/lib/mac
-        ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libmaxminddb/lib/mac
-    )
-    target_link_libraries(${PROJECT_NAME} PRIVATE miniupnpc maxminddb)
 else()
     # Linux
     set_target_properties(${PROJECT_NAME} PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/package
-    )
-    set_target_properties(${PROJECT_NAME} PROPERTIES
         INSTALL_RPATH "$ORIGIN/lib"
     )
-    target_link_directories(${PROJECT_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/miniupnpc/lib/linux
-        ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libmaxminddb/lib/linux
-    )
-    target_link_libraries(${PROJECT_NAME} PRIVATE miniupnpc maxminddb)
 endif()
