@@ -18,6 +18,7 @@
 #include "loghandler.h"
 
 class ServerTableIndexItem;
+class UpdateChecker;
 
 enum AddServerError
 {
@@ -119,6 +120,7 @@ public:
     ServerTableIndexItem *GetServerTableIndexItem(size_t row);
     Ui::MainWindow *GetUi(){return ui;}
     QCheckBox *GetHideOfflineCheck(){return hideOfflineCheck;}
+    UpdateChecker *GetUpdateChecker(){return m_updateChecker;}
     void UpdateGroupComboBox();
     void UpdateGroupColumn(int row, ServerInfo *info);
     ~MainWindow();
@@ -141,6 +143,8 @@ public slots:
     void darkThemeTriggered();
     void showPortEntry();
     void showQueryRetriesEntry();
+    void checkForUpdates();
+    void showUpdateUrlEntry();
     void showAbout();
     void AddRconHistory(QString cmd);
     void AddChatHistory(QString txt);
@@ -197,5 +201,6 @@ private:
     uint8_t commandIterDirection;
     QMutableListIterator<QString> *sayIter;
     uint8_t sayIterDirection;
+    UpdateChecker *m_updateChecker;
 };
 #endif // MAINWINDOW_H

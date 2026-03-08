@@ -7,6 +7,13 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
+# Generate version header from project version
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/version.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/version.h"
+    @ONLY
+)
+
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Widgets)
 
 set(SOURCES
@@ -26,6 +33,7 @@ set(SOURCES
     loghandler.cpp
     loghandler_slots.cpp
     util.cpp
+    updatechecker.cpp
 )
 
 set(HEADERS
@@ -39,6 +47,7 @@ set(HEADERS
     simplecrypt.h
     loghandler.h
     util.h
+    updatechecker.h
 )
 
 set(FORMS mainwindow.ui)
@@ -91,6 +100,7 @@ else()
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_BINARY_DIR}
     ${UPNPC_INCLUDE_DIR}
     ${MMDB_INCLUDE_DIR}
 )

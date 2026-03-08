@@ -2,6 +2,7 @@
 #include "mainwindow.h"
 #include "customitems.h"
 #include "settings.h"
+#include "updatechecker.h"
 #include <QKeyEvent>
 #include <QTimer>
 #include <QHBoxLayout>
@@ -80,6 +81,9 @@ MainWindow::MainWindow(QWidget *parent) :
     this->updateTimer = new QTimer(this);
     connect(this->updateTimer, &QTimer::timeout, this, &MainWindow::TimedUpdate);
     this->updateTimer->start(1000);
+
+    m_updateChecker = new UpdateChecker(this);
+    m_updateChecker->checkForUpdates();
 }
 
 MainWindow::~MainWindow()

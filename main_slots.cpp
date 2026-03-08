@@ -4,6 +4,8 @@
 #include "query.h"
 #include "serverinfo.h"
 #include "settings.h"
+#include "updatechecker.h"
+#include "version.h"
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QPalette>
@@ -37,6 +39,8 @@ void MainWindow::ConnectSlots()
     this->ui->actionDark_Theme->connect(this->ui->actionDark_Theme, &QAction::triggered, this, &MainWindow::darkThemeTriggered);
     this->ui->actionSet_Log_Port->connect(this->ui->actionSet_Log_Port, &QAction::triggered, this, &MainWindow::showPortEntry);
     this->ui->actionSet_Query_Retries->connect(this->ui->actionSet_Query_Retries, &QAction::triggered, this, &MainWindow::showQueryRetriesEntry);
+    this->ui->actionCheck_Updates->connect(this->ui->actionCheck_Updates, &QAction::triggered, this, &MainWindow::checkForUpdates);
+    this->ui->actionSet_Update_URL->connect(this->ui->actionSet_Update_URL, &QAction::triggered, this, &MainWindow::showUpdateUrlEntry);
     this->ui->actionAbout->connect(this->ui->actionAbout, &QAction::triggered, this, &MainWindow::showAbout);
     this->ui->browserTable->connect(this->ui->browserTable, &QTableWidget::itemSelectionChanged, this, &MainWindow::browserTableItemSelected);
     this->ui->rconShow->connect(this->ui->rconShow, &QCheckBox::clicked, this, &MainWindow::showRconClicked);
@@ -566,12 +570,32 @@ void MainWindow::showQueryRetriesEntry()
     }
 }
 
+void MainWindow::checkForUpdates()
+{
+    m_updateChecker->checkForUpdates(true);
+}
+
+void MainWindow::showUpdateUrlEntry()
+{
+    bool ok;
+    QString url = QInputDialog::getText(this, tr("Update URL"),
+        tr("GitHub Releases API URL:"), QLineEdit::Normal,
+        m_updateChecker->updateUrl(), &ok,
+        Qt::WindowSystemMenuHint | Qt::WindowTitleHint);
+
+    if(ok)
+    {
+        m_updateChecker->setUpdateUrl(url);
+        settings->SaveSettings();
+    }
+}
+
 void MainWindow::showAbout()
 {
     QMessageBox message(this);
     message.setTextFormat(Qt::RichText);
     message.setText(
-                "Version: 1.1.1\n"
+                QString("Version: %1\n").arg(APP_VERSION_STRING) +
                 "Created by Dr!fter @ <a href=\"https://github.com/Drifter321\">https://github.com/Drifter321</a><br>"
                 "Using miniupnpc @ <a href=\"https://github.com/miniupnp/miniupnp\">https://github.com/miniupnp/miniupnp</a><br><br>"
                 "This product includes GeoLite2 data created by MaxMind, available from<br>"

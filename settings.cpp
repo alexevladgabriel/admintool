@@ -3,6 +3,7 @@
 #include "query.h"
 #include "rcon.h"
 #include "simplecrypt.h"
+#include "updatechecker.h"
 #include "util.h"
 #include <QImage>
 #include <QMap>
@@ -167,6 +168,9 @@ void Settings::ReadSettings()
     if(g_queryMaxRetries < 0) g_queryMaxRetries = 0;
     if(g_queryMaxRetries > 5) g_queryMaxRetries = 5;
 
+    if(pMain->GetUpdateChecker())
+        pMain->GetUpdateChecker()->setUpdateUrl(pSettings->value("updateUrl", DEFAULT_UPDATE_URL).toString());
+
     bool hideOffline = pSettings->value("hideOffline", false).toBool();
     pMain->GetHideOfflineCheck()->setChecked(hideOffline);
 
@@ -257,6 +261,9 @@ void Settings::SaveSettings()
     pSettings->setValue("hideOffline", pMain->GetHideOfflineCheck()->isChecked());
 
     pSettings->setValue("queryMaxRetries", g_queryMaxRetries);
+
+    if(pMain->GetUpdateChecker())
+        pSettings->setValue("updateUrl", pMain->GetUpdateChecker()->updateUrl());
 
     pSettings->beginGroup("servers");
 
