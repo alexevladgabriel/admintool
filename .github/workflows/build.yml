@@ -80,7 +80,11 @@ jobs:
         if: startsWith(runner.os, 'macOS')
         run: |
           macdeployqt build/SourceAdminTool.app
-          codesign --force --deep --sign - build/SourceAdminTool.app
+          # Sign all nested code first (innermost to outermost) with hardened runtime
+          find build/SourceAdminTool.app/Contents/Frameworks -name "*.dylib" -exec codesign --force --options runtime --sign - {} \;
+          find build/SourceAdminTool.app/Contents/Frameworks -name "*.framework" -maxdepth 1 -exec codesign --force --options runtime --sign - {} \;
+          find build/SourceAdminTool.app/Contents/PlugIns -name "*.dylib" -exec codesign --force --options runtime --sign - {} \; 2>/dev/null || true
+          codesign --force --options runtime --sign - build/SourceAdminTool.app
           mkdir package
           mv build/SourceAdminTool.app package
           cd package && zip -r ../SAT-${{ matrix.os_short }}.zip SourceAdminTool.app && cd ..
