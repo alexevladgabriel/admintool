@@ -608,7 +608,7 @@ void MainWindow::showAbout()
     QMessageBox message(this);
     message.setTextFormat(Qt::RichText);
     message.setText(
-                QString("Version: %1\n").arg(APP_VERSION_STRING) +
+                QString("Version: %1 (%2)\n").arg(APP_VERSION_STRING, APP_COMMIT_HASH) +
                 "Created by Dr!fter @ <a href=\"https://github.com/Drifter321\">https://github.com/Drifter321</a><br>"
                 "Using miniupnpc @ <a href=\"https://github.com/miniupnp/miniupnp\">https://github.com/miniupnp/miniupnp</a><br><br>"
                 "This product includes GeoLite2 data created by MaxMind, available from<br>"

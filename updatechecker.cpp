@@ -100,6 +100,7 @@ void UpdateChecker::onReplyFinished(QNetworkReply *reply)
     QString releaseName = release["name"].toString();
     QString htmlUrl = release["html_url"].toString();
     QString body = release["body"].toString();
+    QString targetCommit = release["target_commitish"].toString();
 
     // Extract version: try tag first (e.g. "v1.2.0"), then release name (e.g. "Dev Build v1.2.0 (abc1234)")
     QString remoteVersion = tagName;
@@ -115,21 +116,41 @@ void UpdateChecker::onReplyFinished(QNetworkReply *reply)
             remoteVersion = m.captured(1);
     }
 
-    if(!isNewerVersion(remoteVersion, APP_VERSION_STRING))
+    bool isNewer = isNewerVersion(remoteVersion, APP_VERSION_STRING);
+
+    // For same version (dev builds), compare commit hashes
+    bool isDifferentCommit = false;
+    if(!isNewer && !targetCommit.isEmpty())
+    {
+        QString localCommit = APP_COMMIT_HASH_FULL;
+        // target_commitish is the full SHA; compare with our full hash
+        if(localCommit != "unknown" && targetCommit != localCommit)
+            isDifferentCommit = true;
+    }
+
+    if(!isNewer && !isDifferentCommit)
     {
         if(m_forceCheck)
         {
             QMessageBox::information(m_parentWidget, "No Updates",
-                QString("You are running the latest version (%1).").arg(APP_VERSION_STRING));
+                QString("You are running the latest version (%1 - %2).").arg(APP_VERSION_STRING, APP_COMMIT_HASH));
         }
         return;
     }
 
-    // Check if user previously skipped this version
+    // Build display string for the update
+    QString remoteDisplay = remoteVersion;
+    if(isDifferentCommit && !targetCommit.isEmpty())
+        remoteDisplay = QString("%1 (%2)").arg(remoteVersion, targetCommit.left(7));
+
+    QString localDisplay = QString("%1 (%2)").arg(APP_VERSION_STRING, APP_COMMIT_HASH);
+
+    // Check if user previously skipped this version/commit
     if(!m_forceCheck)
     {
         QString skipped = settings.value("updater/skippedVersion").toString();
-        if(skipped == remoteVersion)
+        QString skipKey = isDifferentCommit ? targetCommit.left(7) : remoteVersion;
+        if(skipped == skipKey)
             return;
     }
 
@@ -138,7 +159,7 @@ void UpdateChecker::onReplyFinished(QNetworkReply *reply)
     msgBox.setWindowTitle("Update Available");
     msgBox.setIcon(QMessageBox::Information);
     msgBox.setText(QString("A new version <b>%1</b> is available! You are running %2.")
-        .arg(remoteVersion, APP_VERSION_STRING));
+        .arg(remoteDisplay, localDisplay));
 
     if(!body.isEmpty())
     {
@@ -159,7 +180,8 @@ void UpdateChecker::onReplyFinished(QNetworkReply *reply)
     }
     else if(msgBox.clickedButton() == skipBtn)
     {
-        settings.setValue("updater/skippedVersion", remoteVersion);
+        QString skipKey = isDifferentCommit ? targetCommit.left(7) : remoteVersion;
+        settings.setValue("updater/skippedVersion", skipKey);
     }
 }
 
