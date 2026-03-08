@@ -28,6 +28,12 @@ LogHandler::LogHandler(MainWindow *main)
 
 LogHandler::~LogHandler()
 {
+    if(workerThread.isRunning())
+    {
+        workerThread.quit();
+        workerThread.wait();
+    }
+
     if(this->logsocket)
     {
         this->logsocket->close();

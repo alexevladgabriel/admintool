@@ -2,6 +2,7 @@
 #include "util.h"
 #include <QFile>
 
+#include <QMutex>
 #include <maxminddb.h>
 
 ServerInfo::ServerInfo(QString server, QueryState state, bool isIP)
@@ -57,8 +58,11 @@ void ServerInfo::cleanHashTable()
 
 void ServerInfo::GetCountryFlag()
 {
+    static QMutex mmdbMutex;
+
     if(!this->host.toString().isEmpty())
     {
+        QMutexLocker locker(&mmdbMutex);
         MMDB_s mmdb;
         int status = MMDB_open(BuildPath("GeoLite2-Country.mmdb").toUtf8().data(), MMDB_MODE_MMAP, &mmdb);
         if (status == MMDB_SUCCESS)
