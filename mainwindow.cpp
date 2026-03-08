@@ -59,6 +59,7 @@ MainWindow::MainWindow(QWidget *parent) :
     statusBar()->addWidget(statusBarLabel, 1);
 
     this->SetRconEnabled(false);
+    m_updateChecker = new UpdateChecker(this);
     settings = new Settings(this);
     settings->SetDefaultSettings();
     settings->ReadSettings();
@@ -83,7 +84,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(this->updateTimer, &QTimer::timeout, this, &MainWindow::TimedUpdate);
     this->updateTimer->start(1000);
 
-    m_updateChecker = new UpdateChecker(this);
     m_updateChecker->checkForUpdates();
 
     // Set up server browser in the Browse tab
